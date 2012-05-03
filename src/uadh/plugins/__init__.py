@@ -3,9 +3,6 @@ import os, imp, sys, new
 __all__ = ['Plugin']
 
 class Plugin:
-    '''
-    The "view" is a gui.Frame
-    '''
     def __init__(self, data):
         self._data = data
 
@@ -26,9 +23,9 @@ class PluginAdmin:
     def get_plugin(self, id):
         return self.__list[id]
 
-    def load_plugins(self, data):
+    def load_plugins(self, data, path = ''):
         # analizamos la carpeta modules
-        modules = self.analize('modules')
+        modules = self.analize(path + 'modules')
         # cargamos los modulos encontrados
         for name in modules:
             try:

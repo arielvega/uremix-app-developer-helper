@@ -1,4 +1,21 @@
-__all__ = ['Frame', 'Section']
+#__all__ = ['Frame', 'Section']
+
+
+class Point:
+    def __init__(self, x = 0, y = 0):
+        self.x = x
+        self.y = y
+
+class Size:
+    def __init__(self, width = 0, height = 0):
+        self.width = width
+        self.height = height
+
+class Rect(Point, Size):
+    def __init__(self, width = 0, height = 0, x = 0, y = 0):
+        Point.__init__(self, x, y)
+        Size.__init__(self, width, height)
+
 
 class Frame:
     def __init__(self):
@@ -54,31 +71,3 @@ class Section:
 
     def set_content(self, content):
         self.__content = content
-
-class GuiFactory:
-    def Section(self, name, content):
-        raise NotImplementedError()
-
-    def Frame(self, title):
-        raise NotImplementedError()
-
-    def Window(self, title):
-        raise NotImplementedError()
-
-    def Wizard(self, title):
-        raise NotImplementedError()
-
-    def Button(self, content):
-        raise NotImplementedError()
-
-    def Label(self, content):
-        raise NotImplementedError()
-
-    def Menu(self, content):
-        raise NotImplementedError()
-
-    def MenuItem(self, content):
-        raise NotImplementedError()
-
-    def Toolbar(self, content):
-        raise NotImplementedError()

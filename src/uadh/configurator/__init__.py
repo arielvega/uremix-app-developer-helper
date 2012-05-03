@@ -33,5 +33,8 @@ class ConfConfigurator(Configurator):
         except:
             return None
 
+'''
+to implement:
+'''
 class XMLConfigurator(Configurator):
     pass
