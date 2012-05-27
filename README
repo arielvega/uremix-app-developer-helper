@@ -6,4 +6,10 @@ uremix-app-developer-help (uadh) es un conjunto de procedimientos y clases que a
 
 Esta herramienta fue pensada para agrupar a las funciones que se ven que son comunes en las aplicaciones, por lo cual tiene hasta la fecha un gestor de plugins, una capa de abstraccion de GUIs y un administrador de cofiguraciones.
 
+Hasta el momento tenemos las siguientes utilidades:
+
+uadh.gui: Biblioteca que hace posible que las insterfaces graficas de usuario sean multiplataforma.
+uadh.plugins: Biblioteca encargada del motos de plugins para aplicaciones.
+uadh.configurator: Biblioteca encargada de la ayuda en la lectura/escritura de archivos de configuracion.
+
 Mas info en: http://wiki.uremix.org/wiki/Uremix-App-Developer-Helper

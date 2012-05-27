@@ -42,7 +42,7 @@ class Widget(uadh.UObject):
             self.__init(cls.__bases__[0])
         if typename == 'Widget':
             self.add_event('mouse_entered')
-            self.add_event('mouse_clicked')
+            self.add_event('clicked')
             self.add_event('mouse_pressed')
             self.add_event('mouse_released')
             self.add_event('mouse_draged')
@@ -72,17 +72,23 @@ class Widget(uadh.UObject):
             self.add_event('layout_removed')
             self.add_event('layout_changed')
             pass
+        elif typename == 'TabContainer':
+            self.add_event('page_changed')
         elif typename == 'Control':
             #self.__init('Child')
             self.add_event('active_changed')
+            self.add_event('text_changed')
         elif typename == 'AbstractButton':
-            self.add_event('button_clicked')
+            pass
             #self.__init('Control')
         elif typename == 'Button':
             #self.__init('AbstractButton')
             pass
-        elif typename == 'PushButton':
+        elif typename == 'AbstractPushButton':
             self.add_event('button_selected')
+            #self.__init('AbstractButton')
+            pass
+        elif typename == 'PushButton':
             #self.__init('AbstractButton')
             pass
         elif typename == 'CheckButton':
@@ -137,6 +143,25 @@ class Widget(uadh.UObject):
 
     def destroy(self):
         raise NotImplementedError()
+
+
+
+class TrayIcon(Widget):
+
+    def show_message(self, message, icon, milisec=5000):
+        pass
+
+    def set_icon(self, icon):
+        pass
+
+    def get_icon(self):
+        pass
+
+    def set_menu(self, menu):
+        pass
+
+    def get_menu(self):
+        pass
 
 
 
@@ -203,6 +228,30 @@ class Container(Parent):
         raise NotImplementedError()
 
 
+class Section(Container):
+    
+    def get_name(self):
+        raise NotImplementedError()
+
+    def set_name(self, name):
+        raise NotImplementedError()
+
+
+
+class ScrolledContainer(Container):
+    pass
+
+
+
+class TabContainer(Container):
+    pass
+
+
+
+class ButtonTabContainer(Container):
+    pass
+
+
 
 class Control(Child):
 
@@ -226,6 +275,21 @@ class Control(Child):
 
 
 
+class Image(Child):
+    pass
+
+
+
+class Icon(Control):
+    pass
+
+
+
+class MenuItem(Control):
+    pass
+
+
+
 class Label(Control):
     pass
 
@@ -246,12 +310,17 @@ class Button(AbstractButton):
 
 
 
-class PushButton(AbstractButton):
+class AbstractPushButton(AbstractButton):
     def set_selected(self, value):
         raise NotImplementedError()
 
     def is_selected(self):
         raise NotImplementedError()
+
+
+
+class PushButton(AbstractButton):
+    pass
 
 
 
@@ -282,3 +351,10 @@ class PasswordField(TextEdit):
 
 class ComboBox(Control):
     pass
+
+
+
+class ListBox(Control):
+    pass
+
+

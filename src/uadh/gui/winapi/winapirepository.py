@@ -96,7 +96,7 @@ class Application(repository.Application):
                 if container <> None:
                     button = container._get_child_from_handler(lParam)
                     if button <> None:
-                        button.emit('button_clicked')
+                        button.emit('clicked')
             elif submessage == winuser.EN_CHANGE:
                 container = self.__get_container_from_handler(hwnd)
                 if container <> None:
@@ -192,12 +192,14 @@ class Widget(repository.Widget):
         r = windef.RECT()
         winuser.GetClientRect(self._hwnd, pointer(r))
         self._rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
+        self.emit('size_changed')
 
     def __move(self):
         if self._hwnd == None:
             self._queue.append((self.__move, ()))
             return
         winuser.MoveWindow(self._hwnd, self._rect.x, self._rect.y, self._rect.width, self._rect.height, windef.TRUE)
+        self.emit('position_changed')
         self.draw()
 
     def set_visible(self, visible):
@@ -207,8 +209,10 @@ class Widget(repository.Widget):
             return
         if visible:
             winuser.ShowWindow(self._hwnd, winuser.SW_SHOWNORMAL)
+            self.emit('show')
         else:
             winuser.ShowWindow(self._hwnd, winuser.SW_HIDE)
+            self.emit('hide')
         self.draw()
 
     def is_visible(self):
@@ -221,14 +225,12 @@ class Widget(repository.Widget):
         winuser.UpdateWindow(self._hwnd)
         self.emit('draw')
 
-    def listener(self, source):
-        pass
-
     def destroy(self):
         if self._hwnd == None:
             self._queue.append((self.destroy, ()))
             return
         winuser.SendMessage(self._hwnd, winuser.WM_DESTROY, 0, 0)
+        self.emit('destroy')
 
 
 
@@ -256,7 +258,7 @@ class Window(Widget):
         newfont = wingdi.CreateFont(12,0,0,0,wingdi.FW_NORMAL,False, False, False,wingdi.DEFAULT_CHARSET, wingdi.OUT_DEFAULT_PRECIS, wingdi.CLIP_DEFAULT_PRECIS,wingdi.DEFAULT_QUALITY, wingdi.DEFAULT_PITCH | wingdi.FF_DONTCARE, 'Arial')
         wingdi.GetStockObject(wingdi.DEFAULT_GUI_FONT)
         winuser.SendMessage(self._hwnd, winuser.WM_SETFONT, newfont, winuser.MAKELPARAM(windef.TRUE, 0))
-            
+        self.emit('created')
         #winuser.AnimateWindow(hwnd, 50000, winuser.AW_BLEND | winuser.AW_HOR_POSITIVE | winuser.AW_CENTER)
 
     def _load_rect(self):
@@ -276,8 +278,8 @@ class Window(Widget):
         self.__container.set_parent(self)
         self.__container.set_rect(rect)
         self.__container._process_queue()
-        self.connect('position_changed', self.__container.listener)
-        self.connect('draw', self.__container.listener)
+        self.connect('position_changed', self.__container._on_position_changed)
+        self.connect('draw', self.__container._on_draw)
         winuser.UpdateWindow(self._hwnd)
         # Pump Messages
         msg = winuser.MSG()
@@ -307,6 +309,7 @@ class Window(Widget):
 
     def destroy(self):
         self.__container.destroy()
+        self.emit('destroy')
 
 
 class Child(Widget):
@@ -321,8 +324,8 @@ class Child(Widget):
 
     def set_parent(self, parent):
         if parent == None: # deleting parent
-            if self._parent <> None:
-                self._parent.disconnect('size_changed', self.listener)
+            #if self._parent <> None:
+            #    self._parent.disconnect('size_changed', self.listener)
             self._parent = None
         else:
             Child.set_parent(self, None)
@@ -344,13 +347,14 @@ class Child(Widget):
                           windef.NULL,#NULL,       # No menu 
                           self._hinst, 
                           windef.NULL);      #// pointer not needed
-                self._parent.connect('size_changed', self.listener)
+                #self._parent.connect('size_changed', self._on_size_changed)
                 newfont = wingdi.CreateFont(-11,0,0,0,wingdi.FW_NORMAL,False, False, False,wingdi.DEFAULT_CHARSET, wingdi.OUT_DEFAULT_PRECIS, wingdi.CLIP_DEFAULT_PRECIS,wingdi.DEFAULT_QUALITY, wingdi.DEFAULT_PITCH | wingdi.FF_DONTCARE, 'Tahoma')
                 winuser.SendMessage(self._hwnd, winuser.WM_SETFONT, newfont, winuser.MAKELPARAM(windef.TRUE, 0))
                 self.emit('created')
+                self.emit('parent_changed')
             else:
                 winuser.SetParent(self._hwnd, self._parent._hwnd)
-                self._parent.connect('size_changed', self.listener)
+                #self._parent.connect('size_changed', self._on_size_changed)
                 self._parent.draw()
 
     def get_parent(self):
@@ -387,35 +391,41 @@ class Parent(Child):
 
     def __init__(self):
         Child.__init__(self)
-        self.__children = []
+        self._children = []
+        self.connect('created', self.__on_created)
+
+    def __on_created(self, source):
+        self._process_queue()
 
     def add_child(self, child):
-        if child not in self.__children:
+        if child not in self._children:
+            self._children.append(child)
             child.set_parent(self)
-            self.__children.append(child)
+            self.emit('child_added')
 
     def remove_child(self, child):
-        if child in self.__children:
+        if child in self._children:
             child.set_parent(None)
-            pos = self.__children.index(child)
-            del(self.__children[pos])
+            pos = self._children.index(child)
+            del(self._children[pos])
+            self.emit('child_removed')
 
     def get_child(self, pos):
         try:
-            return self.__children[pos]
+            return self._children[pos]
         except:
             return None
 
     def get_child_count(self):
-        return len(self.__children)
+        return len(self._children)
 
     def _process_queue(self):
         Child._process_queue(self)
-        for child in self.__children:
+        for child in self._children:
             child._process_queue()
 
     def _get_child_from_handler(self, hwnd):
-        for child in self.__children:
+        for child in self._children:
             if Container in child.__class__.__bases__:
                 childres = child._get_child_from_handler(hwnd)
                 if childres <> None:
@@ -426,11 +436,11 @@ class Parent(Child):
 
     def draw(self):
         Child.draw(self)
-        for child in self.__children:
+        for child in self._children:
             child.draw()
 
     def destroy(self):
-        for child in self.__children:
+        for child in self._children:
             child.destroy()
         Child.destroy(self)
 
@@ -446,9 +456,9 @@ class Container(Parent):
         self._layout = None
 
     def add_child(self, child, position = 0):
-        Parent.add_child(self, child)
         if self._layout <> None:
             self._layout.add_layout_widget(child, position)
+        Parent.add_child(self, child)
 
     def set_layout(self, layout):
         self._layout = layout
@@ -458,24 +468,47 @@ class Container(Parent):
         if self._layout <> None:
             self._layout.do_layout(self)
 
-    def listener(self, source):
-        Parent.listener(self, source)
-        eventname = source.get_current_event()
-        self.__listener(source, eventname)
-
-    def __listener(self, source, eventname):
-        Parent.listener(self, source)
+    def _on_draw(self, source):
         if (self._parent <> None) and (self._parent._hwnd <> None):
-            if eventname == 'position_changed':
-                self.draw()
-            elif eventname == 'size_changed' or eventname == 'draw':
-                r = windef.RECT()
-                winuser.GetClientRect(self._parent._hwnd, pointer(r))
-                rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
-                self.set_rect(rect)
-                self.draw()
+            r = windef.RECT()
+            winuser.GetClientRect(self._parent._hwnd, pointer(r))
+            rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
+            self.set_rect(rect)
+            self.draw()
         else:
-            self._queue.append((self.__listener, (source, eventname)))
+            self._queue.append((self._on_draw, (source,)))
+
+    def _on_size_changed(self, source):
+        if (self._parent <> None) and (self._parent._hwnd <> None):
+            r = windef.RECT()
+            winuser.GetClientRect(self._parent._hwnd, pointer(r))
+            rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
+            self.set_rect(rect)
+            self.draw()
+        else:
+            self._queue.append((self._on_size_changed, (source,)))
+
+    def _on_position_changed(self, source):
+        if (self._parent <> None) and (self._parent._hwnd <> None):
+            self.draw()
+        else:
+            self._queue.append((self._on_position_changed, (source,)))
+
+
+
+class Section(Container):
+    
+    def __init__(self, name):
+        Container.__init__(self)
+        self._caption = name
+
+    def set_name(self, name):
+        self._caption = name
+        self.emit('text_changed')
+
+    def get_name(self):
+        return self._caption
+
 
 
 class ScrolledContainer(Container):
@@ -492,37 +525,34 @@ class TabContainer(Container):
         self._wclass = commctrl.WC_TABCONTROL
         self._style = winuser.WS_CLIPCHILDREN | winuser.WS_CLIPSIBLINGS | winuser.WS_VISIBLE# | commctrl.TCS_OWNERDRAWFIXED
         self._items = {}
-        self.insert_section(0, 'ariel vega')
 
-    def insert_section(self, index, text):
-        self._items[index] = text
+    def add_child(self, child, position=0):
+        self._items[position] = child
         if self._hwnd == None:
-            self._queue.append((self.insert_section, (index, text)))
+            self._queue.append((self.insert_section, (position, child)))
             return
         tie = commctrl.TC_ITEM()
         tie.mask = commctrl.TCIF_TEXT;
-        tie.pszText = LPWSTR(text)
+        tie.pszText = LPWSTR(child)
         tie.cchTextMax = len(tie.pszText.value)
-        commctrl.TabCtrl_InsertItem(self._hwnd, index, byref(tie))
+        commctrl.TabCtrl_InsertItem(self._hwnd, position, byref(tie))
 
-    def __listener(self, source):
-        eventname = source.get_current_event()
-        if eventname == 'draw':
-            for (i,text) in self._items.items():
-                rect = RECT()
-                commctrl.TabCtrl_GetItemRect(self._hwnd, i, pointer(rect))
-                ps = winuser.PAINTSTRUCT()
-                hdc = winuser.BeginPaint(self._hwnd, byref(ps))
-                #winuser.GetClientRect(self._hwnd, byref(rect))
-                newfont = wingdi.CreateFont(25,0,0,0,wingdi.FW_NORMAL,False, False, False,wingdi.DEFAULT_CHARSET, wingdi.OUT_DEFAULT_PRECIS, wingdi.CLIP_DEFAULT_PRECIS,wingdi.DEFAULT_QUALITY, wingdi.DEFAULT_PITCH | wingdi.FF_DONTCARE, 'Arial')
-                oldfont = wingdi.SelectObject(hdc, newfont)
-                winuser.DrawTextA(hdc,
-                          text ,
-                          -1,
-                          byref(rect), 
-                          winuser.DT_SINGLELINE|winuser.DT_CENTER|winuser.DT_VCENTER|winuser.DT_NOCLIP)
-                oldfont = wingdi.SelectObject(hdc, oldfont)
-                winuser.EndPaint(self._hwnd, byref(ps))
+    def _on_draw(self, source):
+        for (i,text) in self._items.items():
+            rect = RECT()
+            commctrl.TabCtrl_GetItemRect(self._hwnd, i, pointer(rect))
+            ps = winuser.PAINTSTRUCT()
+            hdc = winuser.BeginPaint(self._hwnd, byref(ps))
+            #winuser.GetClientRect(self._hwnd, byref(rect))
+            newfont = wingdi.CreateFont(25,0,0,0,wingdi.FW_NORMAL,False, False, False,wingdi.DEFAULT_CHARSET, wingdi.OUT_DEFAULT_PRECIS, wingdi.CLIP_DEFAULT_PRECIS,wingdi.DEFAULT_QUALITY, wingdi.DEFAULT_PITCH | wingdi.FF_DONTCARE, 'Arial')
+            oldfont = wingdi.SelectObject(hdc, newfont)
+            winuser.DrawTextA(hdc,
+                      text ,
+                      -1,
+                      byref(rect), 
+                      winuser.DT_SINGLELINE|winuser.DT_CENTER|winuser.DT_VCENTER|winuser.DT_NOCLIP)
+            oldfont = wingdi.SelectObject(hdc, oldfont)
+            winuser.EndPaint(self._hwnd, byref(ps))
 
 
 
@@ -535,51 +565,33 @@ class ButtonTabContainer(Container):
         self.__buttoncontainer.set_prefered_size(500, 25)
         self.__buttoncontainer.set_visible(True)
         self.set_visible(True)
-        self.add_child(self.__buttoncontainer, BorderLayout.TOP)
         self._items = {}
+        Container.add_child(self, self.__buttoncontainer, BorderLayout.TOP)
 
-    def insert_section(self, section):
-        self._items[section.get_name()] = section
+    def add_child(self, child, position=0):
+        self._items[child.get_name()] = child
         if self._hwnd == None:
-            self._queue.append((self.insert_section, (section,)))
+            self._queue.append((self.add_child, (child,)))
             return
         self._process_queue()
-        b = PushButton(section.get_name())
+        b = PushButton(child.get_name())
         b.set_visible(True)
-        section.button = b
-        self.__buttoncontainer.add_child(section.button)
-        section.button.connect('button_clicked', self.__listener)
+        child.button = b
+        self.__buttoncontainer.add_child(child.button)
+        child.button.connect('clicked', self._on_clicked)
         
-    def __listener(self, source, eventname):
-        eventname = source.get_current_event()
-        if eventname == 'button_clicked':
-            item = self._items[source.get_text()].get_element()
-            ch = self.get_child(1)
-            if ch <> None:
-                self.remove_child(ch)
-                ch.set_visible(False)
-            self.add_child(item, BorderLayout.CENTER)
-            item.set_visible(True)
-            item.draw()
-            self.draw()
-
-class Section:
-    
-    def __init__(self, name, element):
-        self.__name = name
-        self.__element = element
-
-    def get_name(self):
-        return self.__name
-
-    def set_name(self, name):
-        self.__name = name
-
-    def get_element(self):
-        return self.__element
-
-    def set_element(self, element):
-        self.__element = element
+    def _on_clicked(self, source):
+        #item = self._items[source.get_text()].get_element()
+        item = self._items[source.get_text()]
+        ch = self.get_child(1)
+        if ch <> None:
+            ch.set_visible(False)
+            self.remove_child(ch)
+        #self.add_child(item, BorderLayout.CENTER)
+        Container.add_child(self, item, BorderLayout.CENTER)
+        item.set_visible(True)
+        item.draw()
+        self.draw()
 
 
 
@@ -617,10 +629,15 @@ class Control(Child):
 
 
 
+class MenuItem(Control):
+    pass
+
+
+
 class Label(Control):
-    def __init__(self, caption):
+    def __init__(self, text):
         Control.__init__(self)
-        self.set_text(caption)
+        self.set_text(text)
         self._wclass = 'BUTTON'
         self.set_prefered_size(75, 25)
         self._style = winuser.BS_PUSHBUTTON
@@ -628,9 +645,9 @@ class Label(Control):
 
 
 class ToolTip(Control):
-    def __init__(self, caption):
+    def __init__(self, text):
         Control.__init__(self)
-        self.set_text(caption)
+        self.set_text(text)
         self._wclass = commctrl.TOOLTIPS_CLASS
         self._style = commctrl.TTS_ALWAYSTIP | winuser.WS_POPUP | commctrl.TTS_NOPREFIX
         Control.set_position(self, winuser.CW_USEDEFAULT, winuser.CW_USEDEFAULT)
@@ -721,9 +738,9 @@ class ToolTip(Control):
 
 
 class AbstractButton(Control):
-    def __init__(self, caption):
+    def __init__(self, text):
         Control.__init__(self)
-        self.set_text(caption)
+        self.set_text(text)
         self._wclass = 'BUTTON'
         self.set_prefered_size(75, 25)
         self._style = winuser.BS_PUSHBUTTON
@@ -731,15 +748,14 @@ class AbstractButton(Control):
 
 
 class Button(AbstractButton):
-    def __init__(self, caption = ''):
-        AbstractButton.__init__(self, caption)
+    def __init__(self, text = ''):
+        AbstractButton.__init__(self, text)
 
 
 
-class PushButton(AbstractButton):
-    def __init__(self, caption):
-        AbstractButton.__init__(self, caption)
-        self._style = winuser.BS_FLAT
+class AbstractPushButton(AbstractButton):
+    def __init__(self, text):
+        AbstractButton.__init__(self, text)
         self.set_selected(False)
 
     def set_selected(self, value):
@@ -759,21 +775,27 @@ class PushButton(AbstractButton):
 
 
 
-class CheckButton(PushButton):
-    def __init__(self, caption):
-        PushButton.__init__(self, caption)
+class PushButton(AbstractPushButton):
+    def __init__(self, text):
+        AbstractPushButton.__init__(self, text)
+        self._style = winuser.BS_FLAT
+
+
+
+class CheckButton(AbstractPushButton):
+    def __init__(self, text):
+        AbstractPushButton.__init__(self, text)
         self._style = winuser.BS_AUTOCHECKBOX
-        self.connect('button_clicked', self.__process_button_clicked)
+        self.connect('clicked', self.__process_clicked)
 
-    def __process_button_clicked(self, source, eventname = ''):
-        if eventname == 'button_clicked':
-            self.set_selected(not self.is_selected())
-
+    def __process_clicked(self, source):
+        self.set_selected(not self.is_selected())
 
 
-class RadioButton(PushButton):
-    def __init__(self, caption):
-        PushButton.__init__(self, caption)
+
+class RadioButton(AbstractPushButton):
+    def __init__(self, text):
+        AbstractPushButton.__init__(self, text)
         self._style = winuser.BS_AUTORADIOBUTTON
 
 
@@ -819,14 +841,14 @@ class ComboBox(Control):
 if __name__=='__main__':
     
     w = Window()
-    w.set_size(500, 700)
-    w.set_title('MAMA :D')
+    w.set_size(500, 400)
+    w.set_title('HOLA MAMA :D')
     #w.set_visible(True)
     
-    #w.get_container().set_layout(BorderLayout())
+    w.get_container().set_layout(BorderLayout())
     #w.get_container().set_layout(GridLayout(5,4))
     
-    def proc2(element, eventname):
+    def proc2(element):
         print element.get_parent()
     
     ta = TextArea('este es un texto largo')
@@ -837,7 +859,7 @@ if __name__=='__main__':
     w.get_container().add_child(ta, BorderLayout.CENTER)
     print ta.get_text()
     
-    def proc(element, eventname):
+    def proc(element):
         ta.set_active(element.is_selected())
     
     b = Button('Norte')
@@ -857,14 +879,14 @@ if __name__=='__main__':
     b = TextEdit('Oeste')
     b.set_position(100, 150)
     w.get_container().add_child(b, BorderLayout.LEFT)
-    
+    '''
     b = RadioButton('Centro')
     b.set_position(100, 200)
-    #w.get_container().add_child(b, BorderLayout.CENTER)
+    w.get_container().add_child(b, BorderLayout.CENTER)
     
     b = PasswordField('')
     b.set_position(100, 500)
-    #w.get_container().add_child(b)
+    w.get_container().add_child(b)
     
     
     tc = ButtonTabContainer()
@@ -874,21 +896,27 @@ if __name__=='__main__':
     
     b = Button('boton1')
     b.set_position(100, 50)
-    s = Section('uno', b)
-    tc.insert_section(s)
+    s = Section('uno')
+    s.set_layout(BorderLayout())
+    s.add_child(b, BorderLayout.CENTER)
+    tc.add_child(s)
     
     b = Button('boton2')
     b.set_position(100, 50)
-    s = Section('dos', b)
-    tc.insert_section(s)
+    s = Section('dos')
+    s.set_layout(BorderLayout())
+    s.add_child(b, BorderLayout.CENTER)
+    tc.add_child(s)
     
     b = Button('boton3')
     b.set_position(100, 50)
-    s = Section('tres', b)
-    tc.insert_section(s)
+    s = Section('tres')
+    s.set_layout(BorderLayout())
+    s.add_child(b, BorderLayout.CENTER)
+    tc.add_child(s)
     
     w.get_container().add_child(tc)
-    
+    '''
     
     
     app = Application()
