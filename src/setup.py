@@ -30,7 +30,7 @@ Created on 26/10/2011
 from setuptools import setup, find_packages  
   
 setup(name='uremix-app-developer-helper',
-      version='0.3',
+      version='0.3.1',
       description='Un conjunto de procedimientos de ayuda para el desarrollo de aplicaciones en Uremix (http://uremix.org)',
       author='Luis Ariel Vega Soliz',
       author_email='vsoliz.ariel@gmail.com',
