@@ -5,17 +5,18 @@ Created on 09/05/2012
 '''
 
 from PyQt4 import QtGui, QtCore
-from uadh.gui import repository, Rect, Point, Size
+from uadh.gui import baserepository
+from uadh.gui.base import Rect, Point, Size
 from uadh.gui.layouts import BorderLayout, GridLayout
 
 import sys
 import random
 
 
-class Application(repository.Application):
+class Application(baserepository.Application):
 
     def __init__(self):
-        repository.Application.__init__(self)
+        baserepository.Application.__init__(self)
         self.__app = QtGui.QApplication([])
 
     def run(self):
@@ -29,10 +30,10 @@ class Application(repository.Application):
 
 
 
-class Widget(repository.Widget):
+class Widget(baserepository.Widget):
     
     def __init__(self):
-        repository.Widget.__init__(self)
+        baserepository.Widget.__init__(self)
         self._rect = Rect()
         self._prefered_size = Size()
         self.__pressed = False

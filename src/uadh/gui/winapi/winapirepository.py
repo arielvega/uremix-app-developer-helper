@@ -4,7 +4,8 @@ Created on 28/03/2012
 @author: xXx
 '''
 
-from uadh.gui import repository, Rect, Point, Size
+from uadh.gui import baserepository
+from uadh.gui.base import Rect, Point, Size
 
 from uadh.gui.winapi.lib import winuser, windef, winbase, commctrl, wingdi
 from ctypes import byref, WinError, pointer, c_char_p, c_void_p, wintypes
@@ -16,10 +17,10 @@ from ctypes.wintypes import LPSTR, LPWSTR, HANDLE
 from uadh.gui.winapi.lib.windef import RECT
 
 
-class Application(repository.Application):
+class Application(baserepository.Application):
 
     def __init__(self):
-        repository.Application.__init__(self)
+        baserepository.Application.__init__(self)
         self.__registerwcls()
 
     def __registerwcls(self):
@@ -131,10 +132,10 @@ class Application(repository.Application):
             w.destroy()
 
 
-class Widget(repository.Widget):
+class Widget(baserepository.Widget):
     
     def __init__(self):
-        repository.Widget.__init__(self)
+        baserepository.Widget.__init__(self)
         self._rect = Rect()
         self._hwnd = None
         self._queue = []

@@ -1,73 +1,38 @@
 #__all__ = ['Frame', 'Section']
 
+import os
 
-class Point:
-    def __init__(self, x = 0, y = 0):
-        self.x = x
-        self.y = y
+#load an implementation depending on os
+if os.name == 'nt': #sys.platform == 'win32':
+    try:
+        from uadh.gui.tkinter import tkinterrepository as repository
+    except:
+        try:
+            from uadh.gui.winapi import winapirepository as repository
+        except:
+            raise Exception("Sorry: no implementation for your platform ('%s') available" % os.name)
+elif os.name == 'posix':
+    try:
+        from uadh.gui.gtk2 import gtk2repository as repository
+    except Exception, ex:
+        raise
+        try:
+            from uadh.gui.qt4 import qt4repository as repository
+        except:
+            try:
+                from uadh.gui.wxwidgets import wxwidgetsrepository as repository
+            except:
+                try:
+                    from uadh.gui.tkinter import tkinterrepository as repository
+                except:
+                    raise Exception("Sorry: no implementation for your platform ('%s') available" % os.name)
+elif os.name == 'java':
+    from uadh.gui.swing import swingrepository as repository
+    #from uadh.gui.gtk2 import gtk2repository as repository
+else:
+    raise Exception("Sorry: no implementation for your platform ('%s') available" % os.name)
 
-class Size:
-    def __init__(self, width = 0, height = 0):
-        self.width = width
-        self.height = height
-
-class Rect(Point, Size):
-    def __init__(self, width = 0, height = 0, x = 0, y = 0):
-        Point.__init__(self, x, y)
-        Size.__init__(self, width, height)
 
 
-class Frame:
-    def __init__(self):
-        self.__windows = {}
-        self.set_window('main', self)
 
-    def add_section(self, section):
-        raise NotImplementedError()
 
-    def get_section(self, name):
-        raise NotImplementedError()
-
-    def get_menubar(self):
-        return self.__menubar
-
-    def set_menubar(self, menubar):
-        self.__menubar = menubar
-
-    def get_toolbar(self):
-        return self.__toolbar
-
-    def set_toolbar(self, toolbar):
-        self.__toolbar = toolbar
-
-    def get_window(self, name):
-        return self.__windows[name]
-
-    def set_window(self, name, window):
-        self.__windows[name] = window
-
-    def set_visible(self, visible):
-        raise NotImplementedError()
-
-    def set_size(self, width, height):
-        raise NotImplementedError()
-
-    def set_status_message(self, message):
-        raise NotImplementedError()
-
-class Section:
-    def __init__(self, name, content):
-        self.__name = name
-        self.__content = content
-
-    def get_name(self):
-        return self.__name
-
-    def set_name(self, name):
-        self.__name = name
-
-    def get_content(self):
-        return self.__content
-
-    def set_content(self, content):
-        self.__content = content

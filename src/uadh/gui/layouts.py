@@ -3,7 +3,7 @@ Created on 29/03/2012
 
 @author: xXx
 '''
-from uadh.gui import Rect
+from uadh.gui.base import Rect
 
 class Layout:
     def __init__(self):

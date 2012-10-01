@@ -1,4 +1,21 @@
 '''
+Copyright (C) 2010-2012  Luis Ariel Vega Soliz
+
+This file is part of UADH.
+
+    UADH is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    UADH is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with UADH.  If not, see <http://www.gnu.org/licenses/>.
+
 Created on 09/05/2012
 
 @author: ariel
@@ -7,16 +24,17 @@ Created on 09/05/2012
 import pygtk
 pygtk.require('2.0')
 import gtk
-from uadh.gui import repository, Rect, Point, Size
+from uadh.gui import baserepository
+from uadh.gui.base import Rect, Point, Size
 from uadh.gui.layouts import BorderLayout, GridLayout
 import sys
 
 
 
-class Application(repository.Application):
+class Application(baserepository.Application):
 
     def __init__(self):
-        repository.Application.__init__(self)
+        baserepository.Application.__init__(self)
 
     def run(self):
         gtk.gdk.threads_init()
@@ -36,10 +54,10 @@ class Application(repository.Application):
         self.stop()
 
 
-class Widget(repository.Widget):
+class Widget(baserepository.Widget):
     
     def __init__(self):
-        repository.Widget.__init__(self)
+        baserepository.Widget.__init__(self)
         self._rect = Rect(1,1,0,0)
         self._prefered_size = Size()
         #self.set_visible(True)

@@ -39,3 +39,95 @@ class UObject:
 
     def __eq__(self, other):
         return repr(self) == repr(other)
+
+if __name__ == '__main__':
+    from uadh import gui
+    from gui import repository
+    from gui.layouts import *
+    app = repository.Application()
+    w = repository.Window()
+    w.set_size(500, 400)
+    w.set_title('HOLA MAMA :D')
+    #w.set_visible(True)
+    
+    w.get_container().set_layout(BorderLayout())
+    #w.get_container().set_layout(GridLayout(5,4))
+    
+    def proc2(element):
+        print element.get_parent()
+    '''
+    ta = TextArea('este es un texto largo')
+    ta.connect('text_changed', proc2)
+    
+    #ta.set_size(500, 300)
+    ta.set_position(100, 250)
+    w.get_container().add_child(ta, BorderLayout.CENTER)
+    print ta.get_text()
+    '''
+    def proc(element):
+        #print element
+        #ta.set_active(element.is_selected())
+        pass
+    
+    b = repository.Button('Norte')
+    b.set_position(100, 10)
+    w.get_container().add_child(b, BorderLayout.TOP)
+    
+    radio = repository.RadioButton('Sur')
+    radio.set_position(100, 50)
+    w.get_container().add_child(radio, BorderLayout.DOWN)
+    
+    b = repository.CheckButton('Este')
+    b.set_position(100, 100)
+    b.set_selected(True)
+    b.connect('button_selected', proc)
+    w.get_container().add_child(b, BorderLayout.RIGHT)
+    
+    b = repository.PasswordField('Oeste')
+    b.set_position(100, 150)
+    w.get_container().add_child(b, BorderLayout.LEFT)
+    '''
+    b = RadioButton('Centro')
+    b.set_position(100, 200)
+    w.get_container().add_child(b, BorderLayout.CENTER)
+    
+    b = PasswordField('')
+    b.set_position(100, 500)
+    w.get_container().add_child(b)
+    
+    '''
+    tc = repository.ButtonTabContainer()
+    #tc = TabContainer()
+    tc.set_visible(True)
+    tc.set_size(600, 300)
+    tc.set_position(100, 450)
+    
+    b = repository.Button('boton1')
+    b.set_position(100, 50)
+    s = repository.Section('uno')
+    s.set_layout(BorderLayout())
+    s.add_child(b, BorderLayout.CENTER)
+    tc.add_child(s)
+    
+    b = repository.Button('boton2')
+    b.set_position(100, 50)
+    b.connect('clicked', proc)
+    s = repository.Section('dos')
+    s.set_layout(BorderLayout())
+    s.add_child(b, BorderLayout.CENTER)
+    tc.add_child(s)
+    
+    b = repository.Button('boton3')
+    b.set_position(100, 50)
+    s = repository.Section('tres')
+    s.set_layout(BorderLayout())
+    s.add_child(b, BorderLayout.CENTER)
+    tc.add_child(s)
+    
+    w.get_container().add_child(tc, BorderLayout.CENTER)
+    
+    
+    
+    
+    app.set_main_window(w)
+    app.run()
