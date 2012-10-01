@@ -1,36 +1,27 @@
-import sys
-from PyQt4 import QtGui, QtCore
+#
+#
+# Copyright 2011,2012 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
+#
+#
+# This file is part of UADH (Uremix App Developer Helper).
+#
+#    UADH is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    UADH is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with UADH.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
 
+'''
+Created on 09/05/2012
 
-class Example(QtGui.QWidget):
-    
-    def __init__(self):
-        super(Example, self).__init__()
-        
-        self.initUI()
-        
-    def initUI(self):
-        
-        lcd = QtGui.QLCDNumber(self)
-        sld = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-
-        vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(lcd)
-        vbox.addWidget(sld)
-
-        self.setLayout(vbox)
-        sld.valueChanged.connect(lcd.display)
-        
-        self.setGeometry(300, 300, 250, 150)
-        self.setWindowTitle('Signal & slot')
-        self.show()
-        
-def main():
-    
-    app = QtGui.QApplication(sys.argv)
-    ex = Example()
-    sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
+@author: Luis Ariel Vega Soliz
+'''
