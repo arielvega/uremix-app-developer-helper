@@ -1,6 +1,6 @@
 #
 #
-# Copyright 2011,2012 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
+# Copyright 2011,2013 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
 #
 #
 # This file is part of UADH (Uremix App Developer Helper).
@@ -24,7 +24,9 @@
 '''
 Created on 28/03/2012
 
-@author: Luis Ariel Vega Soliz
+@author: Luis Ariel Vega Soliz (ariel.vega@uremix.org)
+@contact: Uremix Team (http://uremix.org)
+
 '''
 
 from uadh.gui import baserepository
@@ -42,8 +44,8 @@ from uadh.gui.winapi.lib.windef import RECT
 
 class Application(baserepository.Application):
 
-    def __init__(self):
-        baserepository.Application.__init__(self)
+    def __init__(self, main_window = None):
+        baserepository.Application.__init__(self, main_window)
         self.__registerwcls()
 
     def __registerwcls(self):
@@ -255,6 +257,25 @@ class Widget(baserepository.Widget):
             return
         winuser.SendMessage(self._hwnd, winuser.WM_DESTROY, 0, 0)
         self.emit('destroy')
+
+
+
+class TrayIcon(Widget):
+
+    def show_message(self, message, icon, milisec=5000):
+        pass
+
+    def set_icon(self, icon):
+        pass
+
+    def get_icon(self):
+        pass
+
+    def set_menu(self, menu):
+        pass
+
+    def get_menu(self):
+        pass
 
 
 
@@ -653,6 +674,16 @@ class Control(Child):
 
 
 
+class Image(Child):
+    pass
+
+
+
+class Icon(Control):
+    pass
+
+
+
 class MenuItem(Control):
     pass
 
@@ -859,6 +890,11 @@ class PasswordField(TextEdit):
 
 
 class ComboBox(Control):
+    pass
+
+
+
+class ListBox(Control):
     pass
 
 

@@ -1,6 +1,6 @@
 #
 #
-# Copyright 2011,2012 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
+# Copyright 2011,2013 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
 #
 #
 # This file is part of UADH (Uremix App Developer Helper).
@@ -23,7 +23,9 @@
 '''
 Created on 09/05/2012
 
-@author: Luis Ariel Vega Soliz
+@author: Luis Ariel Vega Soliz (ariel.vega@uremix.org)
+@contact: Uremix Team (http://uremix.org)
+
 '''
 
 from PyQt4 import QtGui, QtCore
@@ -37,8 +39,8 @@ import random
 
 class Application(baserepository.Application):
 
-    def __init__(self):
-        baserepository.Application.__init__(self)
+    def __init__(self, main_window = None):
+        baserepository.Application.__init__(self, main_window)
         self.__app = QtGui.QApplication([])
 
     def run(self):
@@ -176,6 +178,25 @@ class Widget(baserepository.Widget):
     def destroy(self):
         self.__on_destroy(None)
         self._widget.destroy()
+
+
+
+class TrayIcon(Widget):
+
+    def show_message(self, message, icon, milisec=5000):
+        pass
+
+    def set_icon(self, icon):
+        pass
+
+    def get_icon(self):
+        pass
+
+    def set_menu(self, menu):
+        pass
+
+    def get_menu(self):
+        pass
 
 
 
@@ -446,6 +467,16 @@ class Control(Child):
 
 
 
+class Image(Child):
+    pass
+
+
+
+class Icon(Control):
+    pass
+
+
+
 class MenuItem(Control):
     pass
 
@@ -606,6 +637,11 @@ class ComboBox(Control):
     pass
 
 
+
+class ListBox(Control):
+    pass
+
+
 if __name__=='__main__':
     app = Application()
     w = Window()
@@ -688,9 +724,6 @@ if __name__=='__main__':
     tc.add_child(s)
     
     w.get_container().add_child(tc, BorderLayout.CENTER)
-    
-    
-    
     
     app.set_main_window(w)
     app.run()

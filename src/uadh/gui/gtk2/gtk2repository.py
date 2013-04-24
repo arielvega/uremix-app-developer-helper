@@ -1,6 +1,6 @@
 #
 #
-# Copyright 2011,2012 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
+# Copyright 2011,2013 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
 #
 #
 # This file is part of UADH (Uremix App Developer Helper).
@@ -23,7 +23,9 @@
 '''
 Created on 09/05/2012
 
-@author: Luis Ariel Vega Soliz
+@author: Luis Ariel Vega Soliz (ariel.vega@uremix.org)
+@contact: Uremix Team (http://uremix.org)
+
 '''
 
 import pygtk
@@ -38,8 +40,8 @@ import sys
 
 class Application(baserepository.Application):
 
-    def __init__(self):
-        baserepository.Application.__init__(self)
+    def __init__(self, main_window = None):
+        baserepository.Application.__init__(self, main_window)
 
     def run(self):
         gtk.gdk.threads_init()
@@ -160,6 +162,25 @@ class Widget(baserepository.Widget):
 
     def destroy(self):
         self._widget.destroy()
+
+
+
+class TrayIcon(Widget):
+
+    def show_message(self, message, icon, milisec=5000):
+        pass
+
+    def set_icon(self, icon):
+        pass
+
+    def get_icon(self):
+        pass
+
+    def set_menu(self, menu):
+        pass
+
+    def get_menu(self):
+        pass
 
 
 
@@ -412,6 +433,16 @@ class Control(Child):
 
 
 
+class Image(Child):
+    pass
+
+
+
+class Icon(Control):
+    pass
+
+
+
 class MenuItem(Control):
     pass
 
@@ -601,6 +632,11 @@ class ComboBox(Control):
     pass
 
 
+
+class ListBox(Control):
+    pass
+
+
 if __name__=='__main__':
     
     w = Window()
@@ -684,6 +720,6 @@ if __name__=='__main__':
     
     
     
-    app = Application()
-    app.set_main_window(w)
+    app = Application(w)
+    #app.set_main_window(w)
     app.run()

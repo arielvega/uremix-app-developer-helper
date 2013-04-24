@@ -1,6 +1,6 @@
 #
 #
-# Copyright 2011,2012 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
+# Copyright 2011,2013 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
 #
 #
 # This file is part of UADH (Uremix App Developer Helper).
@@ -24,7 +24,9 @@
 '''
 Created on 26/10/2011
 
-@author: Luis Ariel Vega Soliz
+@author: Luis Ariel Vega Soliz (ariel.vega@uremix.org)
+@contact: Uremix Team (http://uremix.org)
+
 '''
 
 from setuptools import setup, find_packages  

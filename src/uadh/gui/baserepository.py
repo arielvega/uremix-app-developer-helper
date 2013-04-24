@@ -1,6 +1,6 @@
 #
 #
-# Copyright 2011,2012 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
+# Copyright 2011,2013 Luis Ariel Vega Soliz, Uremix (http://www.uremix.org) and contributors.
 #
 #
 # This file is part of UADH (Uremix App Developer Helper).
@@ -24,7 +24,9 @@
 '''
 Created on 26/03/2012
 
-@author: Luis Ariel Vega Soliz
+@author: Luis Ariel Vega Soliz (ariel.vega@uremix.org)
+@contact: Uremix Team (http://uremix.org)
+
 '''
 
 import uadh
@@ -32,9 +34,9 @@ import uadh
 
 
 class Application(uadh.UObject):
-    def __init__(self):
+    def __init__(self, main_window = None):
         self._windows = []
-        self._main_window = None
+        self.set_main_window(main_window)
 
     def add_window(self, window):
         if window not in self._windows:
@@ -42,7 +44,8 @@ class Application(uadh.UObject):
             window.set_app(self)
 
     def set_main_window(self, window):
-        self.add_window(window)
+        if(window <> None):
+            self.add_window(window)
         self._main_window = window
 
     def run(self):
@@ -379,5 +382,4 @@ class ComboBox(Control):
 
 class ListBox(Control):
     pass
-
 
