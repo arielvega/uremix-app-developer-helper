@@ -40,8 +40,8 @@ import sys
 
 class Application(baserepository.Application):
 
-    def __init__(self, main_window = None):
-        baserepository.Application.__init__(self, main_window)
+    def __init__(self):
+        baserepository.Application.__init__(self)
 
     def run(self):
         gtk.gdk.threads_init()
@@ -162,25 +162,6 @@ class Widget(baserepository.Widget):
 
     def destroy(self):
         self._widget.destroy()
-
-
-
-class TrayIcon(Widget):
-
-    def show_message(self, message, icon, milisec=5000):
-        pass
-
-    def set_icon(self, icon):
-        pass
-
-    def get_icon(self):
-        pass
-
-    def set_menu(self, menu):
-        pass
-
-    def get_menu(self):
-        pass
 
 
 
@@ -392,6 +373,9 @@ class ButtonTabContainer(Container):
         child.button = b
         self.__buttoncontainer.add_child(child.button)
         child.button.connect('button_selected', self._on_button_selected)
+        showbutton = self.__buttoncontainer.get_child(0)
+        showbutton.set_selected(True)
+        self._on_button_selected(showbutton)
         
     def _on_button_selected(self, source):
         item = self._items[source.get_text()]
@@ -430,16 +414,6 @@ class Control(Child):
 
     def get_text(self):
         return self._caption
-
-
-
-class Image(Child):
-    pass
-
-
-
-class Icon(Control):
-    pass
 
 
 
@@ -581,6 +555,7 @@ class RadioButton(AbstractPushButton):
         self.set_prefered_size(75, 25)
         self.set_selected(False)
         self.set_visible(True)
+        self._widget.set_active(False)
 
 
 
@@ -629,11 +604,6 @@ class PasswordField(TextEdit):
 
 
 class ComboBox(Control):
-    pass
-
-
-
-class ListBox(Control):
     pass
 
 

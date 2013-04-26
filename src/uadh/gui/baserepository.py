@@ -34,9 +34,9 @@ import uadh
 
 
 class Application(uadh.UObject):
-    def __init__(self, main_window = None):
+    def __init__(self):
         self._windows = []
-        self.set_main_window(main_window)
+        self._main_window = None
 
     def add_window(self, window):
         if window not in self._windows:
@@ -44,8 +44,7 @@ class Application(uadh.UObject):
             window.set_app(self)
 
     def set_main_window(self, window):
-        if(window <> None):
-            self.add_window(window)
+        self.add_window(window)
         self._main_window = window
 
     def run(self):

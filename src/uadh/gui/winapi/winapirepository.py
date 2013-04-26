@@ -44,8 +44,8 @@ from uadh.gui.winapi.lib.windef import RECT
 
 class Application(baserepository.Application):
 
-    def __init__(self, main_window = None):
-        baserepository.Application.__init__(self, main_window)
+    def __init__(self):
+        baserepository.Application.__init__(self)
         self.__registerwcls()
 
     def __registerwcls(self):
@@ -77,8 +77,6 @@ class Application(baserepository.Application):
         # Register Container Class
         if not winuser.RegisterClass(byref(self.contclass)):
             raise WinError()
-        ccex = commctrl.INITCOMMONCONTROLSEX()
-        res = commctrl.InitCommonControlsEx(byref(ccex))
         
 
     def __WindowProc(self, hwnd, message, wParam, lParam):
@@ -260,25 +258,6 @@ class Widget(baserepository.Widget):
 
 
 
-class TrayIcon(Widget):
-
-    def show_message(self, message, icon, milisec=5000):
-        pass
-
-    def set_icon(self, icon):
-        pass
-
-    def get_icon(self):
-        pass
-
-    def set_menu(self, menu):
-        pass
-
-    def get_menu(self):
-        pass
-
-
-
 class Window(Widget):
 
     def __init__(self, title = ''):
@@ -442,6 +421,11 @@ class Parent(Child):
     def __on_created(self, source):
         self._process_queue()
 
+    def _process_queue(self):
+        Child._process_queue(self)
+        for child in self._children:
+            child._process_queue()
+
     def add_child(self, child):
         if child not in self._children:
             self._children.append(child)
@@ -463,11 +447,6 @@ class Parent(Child):
 
     def get_child_count(self):
         return len(self._children)
-
-    def _process_queue(self):
-        Child._process_queue(self)
-        for child in self._children:
-            child._process_queue()
 
     def _get_child_from_handler(self, hwnd):
         for child in self._children:
@@ -623,9 +602,12 @@ class ButtonTabContainer(Container):
         b.set_visible(True)
         child.button = b
         self.__buttoncontainer.add_child(child.button)
-        child.button.connect('clicked', self._on_clicked)
+        child.button.connect('clicked', self._on_button_selected)
+        showbutton = self.__buttoncontainer.get_child(0)
+        showbutton.set_selected(True)
+        self._on_button_selected(showbutton)
         
-    def _on_clicked(self, source):
+    def _on_button_selected(self, source):
         #item = self._items[source.get_text()].get_element()
         item = self._items[source.get_text()]
         ch = self.get_child(1)
@@ -671,16 +653,6 @@ class Control(Child):
 
     def get_text(self):
         return self._caption
-
-
-
-class Image(Child):
-    pass
-
-
-
-class Icon(Control):
-    pass
 
 
 
@@ -890,11 +862,6 @@ class PasswordField(TextEdit):
 
 
 class ComboBox(Control):
-    pass
-
-
-
-class ListBox(Control):
     pass
 
 

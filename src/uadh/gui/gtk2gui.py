@@ -29,7 +29,7 @@ Created on 04/09/2011
 
 '''
 
-from uadh import gui
+from uadh.gui import base
 import pygtk
 pygtk.require20()
 
@@ -38,7 +38,7 @@ import gtk, gobject
 
 __all__ = ['GtkWindow', 'GtkWizard']
 
-class GtkFrame(gui.Frame, gtk.Window):
+class GtkFrame(base.Frame, gtk.Window):
     def __init__(self, title):
         gtk.Window.__init__(self)
         self.set_title(title)

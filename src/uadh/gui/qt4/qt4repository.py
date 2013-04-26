@@ -34,14 +34,14 @@ from uadh.gui.base import Rect, Point, Size
 from uadh.gui.layouts import BorderLayout, GridLayout
 
 import sys
-import random
 
+qt4repositoryapp = QtGui.QApplication([])
 
 class Application(baserepository.Application):
 
-    def __init__(self, main_window = None):
-        baserepository.Application.__init__(self, main_window)
-        self.__app = QtGui.QApplication([])
+    def __init__(self):
+        baserepository.Application.__init__(self)
+        self.__app = qt4repositoryapp
 
     def run(self):
         self._main_window.set_visible(True)
@@ -178,25 +178,6 @@ class Widget(baserepository.Widget):
     def destroy(self):
         self.__on_destroy(None)
         self._widget.destroy()
-
-
-
-class TrayIcon(Widget):
-
-    def show_message(self, message, icon, milisec=5000):
-        pass
-
-    def set_icon(self, icon):
-        pass
-
-    def get_icon(self):
-        pass
-
-    def set_menu(self, menu):
-        pass
-
-    def get_menu(self):
-        pass
 
 
 
@@ -418,9 +399,11 @@ class ButtonTabContainer(Container):
         child.button = b
         self.__buttoncontainer.add_child(child.button)
         child.button.connect('clicked', self._on_button_selected)
+        showbutton = self.__buttoncontainer.get_child(0)
+        showbutton.set_selected(True)
+        self._on_button_selected(showbutton)
         
     def _on_button_selected(self, source):
-        print source
         item = self._items[source.get_text()]
         ch = self.get_child(1)
         if ch <> None:
@@ -465,16 +448,8 @@ class Control(Child):
     def get_text(self):
         return self._caption
 
-
-
-class Image(Child):
-    pass
-
-
-
-class Icon(Control):
-    pass
-
+    def __repr__(self):
+        return str(self.get_text())
 
 
 class MenuItem(Control):
@@ -565,7 +540,7 @@ class PushButton(AbstractPushButton):
         return self._selected
 
     def draw(self):
-        print 'draw '+self.get_text()
+        #print 'draw '+self.get_text()
         self.emit('draw')
 
 
@@ -634,11 +609,6 @@ class PasswordField(TextEdit):
 
 
 class ComboBox(Control):
-    pass
-
-
-
-class ListBox(Control):
     pass
 
 
