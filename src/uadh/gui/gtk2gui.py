@@ -59,11 +59,11 @@ class GtkFrame(base.Frame, gtk.Window):
     def set_menubar(self, menubar):
         if self.self.get_menubar() <> None:
             self._table.remove(self.get_menubar())
-        gui.Frame.set_menubar(self, menubar)
+        base.Frame.set_menubar(self, menubar)
         self._table.attach(self.get_menubar(), 0, 1, 0, 1, xpadding = 10, ypadding = 10, xoptions=False, yoptions=False)
 
     def set_toolbar(self, toolbar):
-        gui.Frame.set_toolbar(self, toolbar)
+        base.Frame.set_toolbar(self, toolbar)
 
     def set_visible(self, visible):
         if visible:
@@ -180,20 +180,20 @@ class SecuenceViewer(Viewer):
 
 if __name__ == '__main__':
     f = GtkWindow('MMM')
-    s = gui.Section('1',gtk.Frame(''))
+    s = base.Section('1',gtk.Frame(''))
     f.add_section(s)
-    s = gui.Section('2',gtk.Frame(''))
+    s = base.Section('2',gtk.Frame(''))
     f.add_section(s)
-    s = gui.Section('3',gtk.Frame(''))
+    s = base.Section('3',gtk.Frame(''))
     f.add_section(s)
-    s = gui.Section('4',gtk.Frame(''))
+    s = base.Section('4',gtk.Frame(''))
     f.add_section(s)
-    s = gui.Section('5',gtk.Frame(''))
+    s = base.Section('5',gtk.Frame(''))
     f.add_section(s)
     scroll = gtk.ScrolledWindow()
     scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
     scroll.add(ListView('Listita', range(30)))
-    s = gui.Section('6',scroll)
+    s = base.Section('6',scroll)
     f.add_section(s)
     f.show_all()
     gtk.main()
