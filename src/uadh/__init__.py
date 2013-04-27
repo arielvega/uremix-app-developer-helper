@@ -28,6 +28,10 @@ Created on 1/10/2011
 
 '''
 
+import threading
+import time
+
+
 class VoidObject:
     pass
 
@@ -69,6 +73,41 @@ class UObject:
 
     def __eq__(self, other):
         return repr(self) == repr(other)
+
+TCOUNTER = 0
+
+class CommonThread(threading.Thread,UObject):
+    
+    def __init__(self):
+        UObject.__init__(self)
+        threading.Thread.__init__(self)
+        global TCOUNTER
+        TCOUNTER = TCOUNTER + 1
+        self.setName(TCOUNTER)
+        #print 'creado: '+self.getName()
+    
+    def execute(self):
+        raise NotImplementedError('CommonThread.execute() not implemented yet!')
+    
+    def run(self):
+        while True:
+            self.execute()
+            time.sleep(0.1)
+            #print 'ejecutando:'+self.getName()
+            if not self.__started:
+                #print 'matando:'+self.getName()
+                break
+
+    def start(self):
+        try:
+            self.__started = True
+            threading.Thread.start(self)
+        except Exception, ex:
+            print ex
+            pass
+
+    def stop(self):
+        self.__started = False
 
 if __name__ == '__main__':
     from uadh import gui
