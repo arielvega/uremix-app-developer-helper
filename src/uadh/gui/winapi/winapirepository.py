@@ -135,12 +135,12 @@ class Application(baserepository.Application):
 
     def __get_window_from_handler(self, hwnd):
         for w in self._windows:
-            if w._hwnd == hwnd:
+            if w._widget == hwnd:
                 return w
 
     def __get_container_from_handler(self, hwnd):
         for w in self._windows:
-            if w.get_container()._hwnd == hwnd:
+            if w.get_container()._widget == hwnd:
                 return w.get_container()
             else:
                 return w.get_container()._get_child_from_handler(hwnd)
@@ -160,13 +160,13 @@ class Widget(baserepository.Widget):
     def __init__(self):
         baserepository.Widget.__init__(self)
         self._rect = Rect()
-        self._hwnd = None
+        self._widget = None
         self._queue = []
         self._prefered_size = Size()
         self.set_visible(True)
 
     def _process_queue(self):
-        if self._hwnd <> None:
+        if self._widget <> None:
             queue = self._queue
             self._queue = []
             for (f,args) in queue:
@@ -186,56 +186,59 @@ class Widget(baserepository.Widget):
         return Size(self._rect.width, self._rect.height)
 
     def set_size(self, width, height):
-        self._rect.width = width
-        self._rect.height = height
-        self.__move()
+        if width > 0 and height > 0:
+            self._rect.width = width
+            self._rect.height = height
+            self.__move()
 
     def get_prefered_size(self):
         return Size(self._prefered_size.width, self._prefered_size.height)
 
     def set_prefered_size(self, width, height):
-        self._prefered_size.width = width
-        self._prefered_size.height = height
-        if (self._rect.height < height) or (self._rect.width < width):
-            self.set_size(width, height)
+        if width > 0 and height > 0:
+            self._prefered_size.width = width
+            self._prefered_size.height = height
+            if (self._rect.height < height) or (self._rect.width < width):
+                self.set_size(width, height)
 
     def get_rect(self):
         self._load_rect()
         return Rect(self._rect.width, self._rect.height, self._rect.x, self._rect.y)
 
     def set_rect(self, rect):
-        self._rect.x = rect.x
-        self._rect.y = rect.y
-        self._rect.width = rect.width
-        self._rect.height = rect.height
-        self.__move()
+        if rect.width > 0 and rect.height > 0:
+            self._rect.x = rect.x
+            self._rect.y = rect.y
+            self._rect.width = rect.width
+            self._rect.height = rect.height
+            self.__move()
 
     def _load_rect(self):
-        if self._hwnd == None:
+        if self._widget == None:
             return
         r = windef.RECT()
-        winuser.GetClientRect(self._hwnd, pointer(r))
+        winuser.GetClientRect(self._widget, pointer(r))
         self._rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
         self.emit('size_changed')
 
     def __move(self):
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.__move, ()))
             return
-        winuser.MoveWindow(self._hwnd, self._rect.x, self._rect.y, self._rect.width, self._rect.height, windef.TRUE)
+        winuser.MoveWindow(self._widget, self._rect.x, self._rect.y, self._rect.width, self._rect.height, windef.TRUE)
         self.emit('position_changed')
         self.draw()
 
     def set_visible(self, visible):
         self._visible = visible
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.set_visible, (visible,)))
             return
         if visible:
-            winuser.ShowWindow(self._hwnd, winuser.SW_SHOWNORMAL)
+            winuser.ShowWindow(self._widget, winuser.SW_SHOWNORMAL)
             self.emit('show')
         else:
-            winuser.ShowWindow(self._hwnd, winuser.SW_HIDE)
+            winuser.ShowWindow(self._widget, winuser.SW_HIDE)
             self.emit('hide')
         self.draw()
 
@@ -243,17 +246,17 @@ class Widget(baserepository.Widget):
         return self._visible
 
     def draw(self):
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.draw, ()))
             return
-        winuser.UpdateWindow(self._hwnd)
+        winuser.UpdateWindow(self._widget)
         self.emit('draw')
 
     def destroy(self):
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.destroy, ()))
             return
-        winuser.SendMessage(self._hwnd, winuser.WM_DESTROY, 0, 0)
+        winuser.SendMessage(self._widget, winuser.WM_DESTROY, 0, 0)
         self.emit('destroy')
 
 
@@ -268,7 +271,7 @@ class Window(Widget):
 
     def __create(self):
         # Create Window
-        self._hwnd = CreateWindow(  'MAINWINDOW',
+        self._widget = CreateWindow(  'MAINWINDOW',
                           self.__title,
                           winuser.WS_OVERLAPPEDWINDOW | winuser.WS_CLIPCHILDREN,
                           winuser.CW_USEDEFAULT,
@@ -281,22 +284,22 @@ class Window(Widget):
                           windef.NULL)
         newfont = wingdi.CreateFont(12,0,0,0,wingdi.FW_NORMAL,False, False, False,wingdi.DEFAULT_CHARSET, wingdi.OUT_DEFAULT_PRECIS, wingdi.CLIP_DEFAULT_PRECIS,wingdi.DEFAULT_QUALITY, wingdi.DEFAULT_PITCH | wingdi.FF_DONTCARE, 'Arial')
         wingdi.GetStockObject(wingdi.DEFAULT_GUI_FONT)
-        winuser.SendMessage(self._hwnd, winuser.WM_SETFONT, newfont, winuser.MAKELPARAM(windef.TRUE, 0))
+        winuser.SendMessage(self._widget, winuser.WM_SETFONT, newfont, winuser.MAKELPARAM(windef.TRUE, 0))
         self.emit('created')
         #winuser.AnimateWindow(hwnd, 50000, winuser.AW_BLEND | winuser.AW_HOR_POSITIVE | winuser.AW_CENTER)
 
     def _load_rect(self):
-        if self._hwnd == None:
+        if self._widget == None:
             return
         r = windef.RECT()
-        winuser.GetClientRect(self._hwnd, pointer(r))
+        winuser.GetClientRect(self._widget, pointer(r))
         self._rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
 
     def _main(self):
         self.__create()
         self._process_queue()
         r = windef.RECT()
-        winuser.GetClientRect(self._hwnd, pointer(r))
+        winuser.GetClientRect(self._widget, pointer(r))
         rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
         self.__container._load_rect = self._load_rect
         self.__container.set_parent(self)
@@ -304,7 +307,7 @@ class Window(Widget):
         self.__container._process_queue()
         self.connect('position_changed', self.__container._on_position_changed)
         self.connect('draw', self.__container._on_draw)
-        winuser.UpdateWindow(self._hwnd)
+        winuser.UpdateWindow(self._widget)
         # Pump Messages
         msg = winuser.MSG()
         pMsg = pointer(msg)
@@ -320,10 +323,10 @@ class Window(Widget):
 
     def set_title(self, title):
         self.__title = title
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.set_title, (title,)))
             return
-        winuser.SetWindowText(self._hwnd , title)
+        winuser.SetWindowText(self._widget , title)
 
     def get_title(self):
         return self.__title
@@ -354,12 +357,12 @@ class Child(Widget):
         else:
             Child.set_parent(self, None)
             self._parent = parent
-            if self._parent._hwnd == None:
+            if self._parent._widget == None:
                 self._createops.append((self.set_parent, (parent,)))
-            elif self._hwnd == None:
-                self._hinst = winuser.GetWindowLong(self._parent._hwnd, winuser.GWL_HINSTANCE)
+            elif self._widget == None:
+                self._hinst = winuser.GetWindowLong(self._parent._widget, winuser.GWL_HINSTANCE)
                 rect = self.get_rect()
-                self._hwnd = CreateWindow(  self._wclass,
+                self._widget = CreateWindow(  self._wclass,
                           self._caption,
                           winuser.WS_VISIBLE | winuser.WS_CHILD | self._style,
                           # Size and position values are given explicitly, because the CW_USEDEFAULT constant gives zero values for buttons. 
@@ -367,17 +370,17 @@ class Child(Widget):
                           rect.y,         # starting y position 
                           rect.width,        # button width 
                           rect.height,        # button height 
-                          self._parent._hwnd,#hwnd,       # parent window 
+                          self._parent._widget,#hwnd,       # parent window 
                           windef.NULL,#NULL,       # No menu 
                           self._hinst, 
                           windef.NULL);      #// pointer not needed
                 #self._parent.connect('size_changed', self._on_size_changed)
                 newfont = wingdi.CreateFont(-11,0,0,0,wingdi.FW_NORMAL,False, False, False,wingdi.DEFAULT_CHARSET, wingdi.OUT_DEFAULT_PRECIS, wingdi.CLIP_DEFAULT_PRECIS,wingdi.DEFAULT_QUALITY, wingdi.DEFAULT_PITCH | wingdi.FF_DONTCARE, 'Tahoma')
-                winuser.SendMessage(self._hwnd, winuser.WM_SETFONT, newfont, winuser.MAKELPARAM(windef.TRUE, 0))
+                winuser.SendMessage(self._widget, winuser.WM_SETFONT, newfont, winuser.MAKELPARAM(windef.TRUE, 0))
                 self.emit('created')
                 self.emit('parent_changed')
             else:
-                winuser.SetParent(self._hwnd, self._parent._hwnd)
+                winuser.SetParent(self._widget, self._parent._widget)
                 #self._parent.connect('size_changed', self._on_size_changed)
                 self._parent.draw()
 
@@ -395,12 +398,12 @@ class Child(Widget):
             return self
 
     def _load_rect(self):
-        if self._hwnd == None:
+        if self._widget == None:
             return
         pr = windef.RECT()
-        winuser.GetWindowRect(self._parent._hwnd, pointer(pr))
+        winuser.GetWindowRect(self._parent._widget, pointer(pr))
         r = windef.RECT()
-        winuser.GetWindowRect(self._hwnd, pointer(r))
+        winuser.GetWindowRect(self._widget, pointer(r))
         self._rect = Rect(r.right - r.left, r.bottom - r.top, r.left - pr.left, r.top - pr.top)
 
     def _process_queue(self):
@@ -454,7 +457,7 @@ class Parent(Child):
                 childres = child._get_child_from_handler(hwnd)
                 if childres <> None:
                     return childres
-            elif child._hwnd == hwnd:
+            elif child._widget == hwnd:
                 return child
         return None
 
@@ -493,9 +496,9 @@ class Container(Parent):
             self._layout.do_layout(self)
 
     def _on_draw(self, source):
-        if (self._parent <> None) and (self._parent._hwnd <> None):
+        if (self._parent <> None) and (self._parent._widget <> None):
             r = windef.RECT()
-            winuser.GetClientRect(self._parent._hwnd, pointer(r))
+            winuser.GetClientRect(self._parent._widget, pointer(r))
             rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
             self.set_rect(rect)
             self.draw()
@@ -503,9 +506,9 @@ class Container(Parent):
             self._queue.append((self._on_draw, (source,)))
 
     def _on_size_changed(self, source):
-        if (self._parent <> None) and (self._parent._hwnd <> None):
+        if (self._parent <> None) and (self._parent._widget <> None):
             r = windef.RECT()
-            winuser.GetClientRect(self._parent._hwnd, pointer(r))
+            winuser.GetClientRect(self._parent._widget, pointer(r))
             rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
             self.set_rect(rect)
             self.draw()
@@ -513,7 +516,7 @@ class Container(Parent):
             self._queue.append((self._on_size_changed, (source,)))
 
     def _on_position_changed(self, source):
-        if (self._parent <> None) and (self._parent._hwnd <> None):
+        if (self._parent <> None) and (self._parent._widget <> None):
             self.draw()
         else:
             self._queue.append((self._on_position_changed, (source,)))
@@ -552,22 +555,22 @@ class TabContainer(Container):
 
     def add_child(self, child, position=0):
         self._items[position] = child
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.insert_section, (position, child)))
             return
         tie = commctrl.TC_ITEM()
         tie.mask = commctrl.TCIF_TEXT;
         tie.pszText = LPWSTR(child)
         tie.cchTextMax = len(tie.pszText.value)
-        commctrl.TabCtrl_InsertItem(self._hwnd, position, byref(tie))
+        commctrl.TabCtrl_InsertItem(self._widget, position, byref(tie))
 
     def _on_draw(self, source):
         for (i,text) in self._items.items():
             rect = RECT()
-            commctrl.TabCtrl_GetItemRect(self._hwnd, i, pointer(rect))
+            commctrl.TabCtrl_GetItemRect(self._widget, i, pointer(rect))
             ps = winuser.PAINTSTRUCT()
-            hdc = winuser.BeginPaint(self._hwnd, byref(ps))
-            #winuser.GetClientRect(self._hwnd, byref(rect))
+            hdc = winuser.BeginPaint(self._widget, byref(ps))
+            #winuser.GetClientRect(self._widget, byref(rect))
             newfont = wingdi.CreateFont(25,0,0,0,wingdi.FW_NORMAL,False, False, False,wingdi.DEFAULT_CHARSET, wingdi.OUT_DEFAULT_PRECIS, wingdi.CLIP_DEFAULT_PRECIS,wingdi.DEFAULT_QUALITY, wingdi.DEFAULT_PITCH | wingdi.FF_DONTCARE, 'Arial')
             oldfont = wingdi.SelectObject(hdc, newfont)
             winuser.DrawTextA(hdc,
@@ -576,7 +579,7 @@ class TabContainer(Container):
                       byref(rect), 
                       winuser.DT_SINGLELINE|winuser.DT_CENTER|winuser.DT_VCENTER|winuser.DT_NOCLIP)
             oldfont = wingdi.SelectObject(hdc, oldfont)
-            winuser.EndPaint(self._hwnd, byref(ps))
+            winuser.EndPaint(self._widget, byref(ps))
 
 
 
@@ -594,7 +597,7 @@ class ButtonTabContainer(Container):
 
     def add_child(self, child, position=0):
         self._items[child.get_name()] = child
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.add_child, (child,)))
             return
         self._process_queue()
@@ -619,6 +622,7 @@ class ButtonTabContainer(Container):
         item.set_visible(True)
         item.draw()
         self.draw()
+        self.emit('page_changed')
 
 
 
@@ -626,16 +630,16 @@ class Control(Child):
 
     def __init__(self):
         Child.__init__(self)
-        self._hwnd = None
+        self._widget = None
         self._caption = ''
         self.set_active(True)
 
     def set_active(self, active):
         self._active = active
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.set_active, (active,)))
             return
-        winuser.EnableWindow(self._hwnd, self._active)
+        winuser.EnableWindow(self._widget, self._active)
         self.emit('active_changed')
 
     def is_active(self):
@@ -646,10 +650,10 @@ class Control(Child):
 
     def set_text(self, text):
         self._caption = text
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.set_text, (text,)))
             return
-        winuser.SetWindowText(self._hwnd , self._caption)
+        winuser.SetWindowText(self._widget , self._caption)
 
     def get_text(self):
         return self._caption
@@ -695,11 +699,11 @@ class ToolTip(Control):
         else:
             self.set_parent(None)
             self._parent = parent
-            if self._parent._hwnd == None:
+            if self._parent._widget == None:
                 self._createops.append((self.set_parent, (parent,)))
-            elif self._hwnd == None:
-                self._hinst = winuser.GetWindowLong(self._parent._hwnd, winuser.GWL_HINSTANCE)
-                self._hwnd = winuser.CreateWindowEx(
+            elif self._widget == None:
+                self._hinst = winuser.GetWindowLong(self._parent._widget, winuser.GWL_HINSTANCE)
+                self._widget = winuser.CreateWindowEx(
                           winuser.WS_EX_TOPMOST,
                           self._wclass,
                           '',
@@ -709,17 +713,17 @@ class ToolTip(Control):
                           0,        # starting y position 
                           0,        # button width 
                           0,        # button height 
-                          self._parent._hwnd,      # parent window 
+                          self._parent._widget,      # parent window 
                           windef.NULL,      # No menu 
                           windef.NULL, 
                           windef.NULL);     # pointer not needed
                 
-                winuser.SetWindowPos(self._hwnd, winuser.HWND_TOPMOST, 0,0,0,0, winuser.SWP_NOMOVE | winuser.SWP_NOSIZE | winuser.SWP_NOACTIVATE)
+                winuser.SetWindowPos(self._widget, winuser.HWND_TOPMOST, 0,0,0,0, winuser.SWP_NOMOVE | winuser.SWP_NOSIZE | winuser.SWP_NOACTIVATE)
                 
                 ti = commctrl.TOOLINFO()
                 ti.cbSize = 44
                 ti.uFlags = commctrl.TTF_SUBCLASS
-                ti.hwnd = self._parent._hwnd 
+                ti.hwnd = self._parent._widget 
                 ti.hinst = windef.NULL
                 ti.uId = 0; 
                 ti.lpszText = self._caption; 
@@ -729,21 +733,21 @@ class ToolTip(Control):
                 ti.rect.top = prect.y
                 ti.rect.right = prect.x + prect.width
                 ti.rect.bottom = prect.y + prect.height
-                winuser.SendMessage(self._hwnd, commctrl.TTM_ADDTOOL, 0, byref(ti))
-                #winuser.SendMessage(self._hwnd, commctrl.TTM_ACTIVATE, windef.TRUE, 0)
+                winuser.SendMessage(self._widget, commctrl.TTM_ADDTOOL, 0, byref(ti))
+                #winuser.SendMessage(self._widget, commctrl.TTM_ACTIVATE, windef.TRUE, 0)
 
                 #newfont = wingdi.CreateFont(-11,0,0,0,wingdi.FW_NORMAL,False, False, False,wingdi.DEFAULT_CHARSET, wingdi.OUT_DEFAULT_PRECIS, wingdi.CLIP_DEFAULT_PRECIS,wingdi.DEFAULT_QUALITY, wingdi.DEFAULT_PITCH | wingdi.FF_DONTCARE, 'Tahoma')
-                #winuser.SendMessage(self._hwnd, winuser.WM_SETFONT, newfont, winuser.MAKELPARAM(windef.TRUE, 0))
+                #winuser.SendMessage(self._widget, winuser.WM_SETFONT, newfont, winuser.MAKELPARAM(windef.TRUE, 0))
                 self.emit('created')
             else:
                 self._parent.draw()
 
     def set_text(self, text):
         self._caption = text
-        if (self._parent <> None) and (self._parent._hwnd <> None):
+        if (self._parent <> None) and (self._parent._widget <> None):
             ti = commctrl.TOOLINFO()
             ti.cbSize = 44
-            ti.hwnd = self._parent._hwnd 
+            ti.hwnd = self._parent._widget 
             ti.hinst = self._hinst
             ti.uId = 0; 
             ti.lpszText = self._caption; 
@@ -753,8 +757,8 @@ class ToolTip(Control):
             ti.rect.top = prect.y
             ti.rect.right = prect.x + prect.width
             ti.rect.bottom = prect.y + prect.height
-            winuser.SendMessage(self._hwnd, commctrl.TTM_ADDTOOL, 0, byref(ti))
-            winuser.SendMessage(self._hwnd, commctrl.TTM_ACTIVATE, windef.TRUE, 0)
+            winuser.SendMessage(self._widget, commctrl.TTM_ADDTOOL, 0, byref(ti))
+            winuser.SendMessage(self._widget, commctrl.TTM_ACTIVATE, windef.TRUE, 0)
         else:
             self._queue.append((self.set_text, (text,)))
             return
@@ -787,14 +791,14 @@ class AbstractPushButton(AbstractButton):
 
     def set_selected(self, value):
         self._selected = value
-        if self._hwnd == None:
+        if self._widget == None:
             self._queue.append((self.set_selected, (value,)))
             return
         if value:
             fCheck = winuser.BST_CHECKED
         else:
             fCheck = winuser.BST_UNCHECKED
-        winuser.SendMessage(self._hwnd, winuser.BM_SETCHECK, fCheck, 0)
+        winuser.SendMessage(self._widget, winuser.BM_SETCHECK, fCheck, 0)
         self.emit('button_selected')
 
     def is_selected(self):
@@ -837,8 +841,8 @@ class TextEdit(Control):
 
     def get_text(self):
         textbuff = c_char_p('')
-        if self._hwnd <> None:
-            winuser.GetWindowText(self._hwnd , textbuff, winuser.GetWindowTextLength(self._hwnd) + 1)
+        if self._widget <> None:
+            winuser.GetWindowText(self._widget , textbuff, winuser.GetWindowTextLength(self._widget) + 1)
         self._caption = textbuff.value
         return self._caption
 

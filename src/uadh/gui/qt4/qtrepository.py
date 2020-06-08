@@ -21,7 +21,7 @@
 #
 
 '''
-Created on 09/05/2012
+Created on 28/03/2012
 
 @author: Luis Ariel Vega Soliz (ariel.vega@uremix.org)
 @contact: Uremix Team (http://uremix.org)
@@ -43,8 +43,23 @@ class Application(baserepository.Application):
         baserepository.Application.__init__(self)
         self.__app = qt4repositoryapp
 
+    def __get_window_from_handler(self, hwnd):
+        for w in self._windows:
+            if w._widget == hwnd:
+                return w
+
+    def __get_container_from_handler(self, hwnd):
+        for w in self._windows:
+            if w.get_container()._widget == hwnd:
+                return w.get_container()
+            else:
+                return w.get_container()._get_child_from_handler(hwnd)
+        return None
+
     def run(self):
-        self._main_window.set_visible(True)
+        if self._main_window <> None:
+            self._main_window._main()
+            self._main_window.set_visible(True)
         sys.exit(self.__app.exec_())
 
     def stop(self):
@@ -53,15 +68,15 @@ class Application(baserepository.Application):
         pass
 
 
-
 class Widget(baserepository.Widget):
     
     def __init__(self):
         baserepository.Widget.__init__(self)
         self._rect = Rect()
         self._widget = None
+        self._queue = []
         self._prefered_size = Size()
-        self.__pressed = False
+        self.set_visible(True)
 
     def _set_widget(self, w):
         self._widget = w
@@ -110,6 +125,13 @@ class Widget(baserepository.Widget):
             self.emit('clicked')
         self.__pressed = False
 
+    def _process_queue(self):
+        if self._widget <> None:
+            queue = self._queue
+            self._queue = []
+            for (f,args) in queue:
+                f(*args)
+
     def get_position(self):
         self._load_rect()
         return Point(self._rect.x, self._rect.y)
@@ -152,32 +174,57 @@ class Widget(baserepository.Widget):
             self.__move()
 
     def _load_rect(self):
+        if self._widget == None:
+            return
         self._rect = Rect(self._widget.width(), self._widget.height(), self._widget.x(), self._widget.y())
         self.emit('size_changed')
 
     def __move(self):
+        if self._widget == None:
+            #self._queue.append((self.__move, ()))
+            self._qappend(self.__move)
+            return
         self._widget.move(self._rect.x, self._rect.y)
         self._widget.resize(self._rect.width, self._rect.height)
+        #self.emit('position_changed')
         self.draw()
-    
+
     def set_visible(self, visible):
         self._visible = visible
+        if self._widget == None:
+            #self._queue.append((self.set_visible, (visible,)))
+            self._qappend(self.set_visible, visible)
+            return
         if visible:
             self._widget.show()
+            #self.emit('show')
         else:
             self._widget.hide()
+            #self.emit('hide')
         self.draw()
 
     def is_visible(self):
         return self._visible
 
     def draw(self):
+        if self._widget == None:
+            #self._queue.append((self.draw, ()))
+            self._qappend(self.draw)
+            return
         self._widget.update()
-        self.__on_draw(None)
+        self.emit('draw')
 
     def destroy(self):
-        self.__on_destroy(None)
+        if self._widget == None:
+            self._queue.append((self.destroy, ()))
+            return
+        self.emit('destroy')
         self._widget.destroy()
+
+    def _qappend(self, f, *args):
+        e = (f,args)
+        if len(self._queue)==0 or self._queue[-1] != e:
+            self._queue.append(e)
 
 
 
@@ -185,12 +232,38 @@ class Window(Widget):
 
     def __init__(self, title = ''):
         Widget.__init__(self)
-        self._set_widget(QtGui.QMainWindow())
         self.__container = Container()
         self.connect('size_changed', self.__on_size_changed)
-        self._widget.setCentralWidget(self.__container._widget)
         self.__app = None
         self.set_title(title)
+
+    def __create(self):
+        # Create Window
+        self._set_widget(QtGui.QMainWindow())
+        self.emit('created')
+
+    #def _load_rect(self):
+    #    if self._widget == None:
+    #        return
+    #    r = windef.RECT()
+    #    winuser.GetClientRect(self._widget, pointer(r))
+    #    self._rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
+
+    def _main(self):
+        self.__create()
+        self._process_queue()
+        #r = windef.RECT()
+        #winuser.GetClientRect(self._widget, pointer(r))
+        #rect = Rect(r.right - r.left, r.bottom - r.top, r.left, r.top)
+        #self.__container._load_rect = self._load_rect
+        self.__container.set_parent(self)
+        #self.__container.set_rect(rect)
+        #self.__container._process_queue()
+        self._widget.setCentralWidget(self.__container._widget)
+        self.connect('position_changed', self.__container._on_position_changed)
+        self.connect('draw', self.__container._on_draw)
+        self._widget.update()
+        #self.emit('draw')
 
     def __on_size_changed(self, *args):
         self.__container.draw()
@@ -200,6 +273,9 @@ class Window(Widget):
 
     def set_title(self, title):
         self.__title = title
+        if self._widget == None:
+            self._queue.append((self.set_title, (title,)))
+            return
         self._widget.setWindowTitle(title)
 
     def get_title(self):
@@ -210,15 +286,15 @@ class Window(Widget):
 
     def destroy(self):
         self.__container.destroy()
+        #self.emit('destroy')
         Widget.destroy(self)
 
     def set_visible(self, visible):
-        self._visible = visible
-        if visible:
-            self._widget.show()
-        else:
-            self._widget.hide()
-        self.draw()
+        Widget.set_visible(self, visible)
+        try:
+            self.__container.set_visible(visible)
+        except:
+            pass
 
 
 
@@ -227,17 +303,26 @@ class Child(Widget):
     def __init__(self):
         Widget.__init__(self)
         self._parent = None
+        self._createops = []
 
     def set_parent(self, parent):
         if parent == None: # deleting parent
+            #if self._parent <> None:
+            #    self._parent.disconnect('size_changed', self.listener)
             self._parent = None
         else:
             Child.set_parent(self, None)
             self._parent = parent
-            self._parent.connect('size_changed', lambda *args: self.draw())
-            self._widget.setParent(self._parent._widget)
-            self.emit('parent_changed')
-            self._parent.draw()
+            if self._parent._widget == None or self._widget == None:
+                if self._parent._widget != None:
+                    self._process_queue()
+                else:
+                    self._createops.append((self.set_parent, (parent,)))
+            else:
+                self._parent.connect('size_changed', lambda *args: self.draw())
+                self._widget.setParent(self._parent._widget)
+                self.emit('parent_changed')
+                self._parent.draw()
 
     def get_parent(self):
         return self._parent
@@ -252,6 +337,19 @@ class Child(Widget):
         else:
             return self
 
+    def _process_queue(self):
+        createops = self._createops
+        self._createops = []
+        for (f,args) in createops:
+            f(*args)
+        Widget._process_queue(self)
+
+    def _set_widget(self, w):
+        if self._parent == None:
+            self._createops.append((self._set_widget, (w,)))
+            return
+        Widget._set_widget(self, w)
+            
 
 
 class Parent(Child):
@@ -259,6 +357,15 @@ class Parent(Child):
     def __init__(self):
         Child.__init__(self)
         self._children = []
+        self.connect('created', self.__on_created)
+
+    def __on_created(self, source):
+        self._process_queue()
+
+    def _process_queue(self):
+        Child._process_queue(self)
+        for child in self._children:
+            child._process_queue()
 
     def add_child(self, child):
         if child not in self._children:
@@ -293,8 +400,13 @@ class Parent(Child):
         Child.destroy(self)
 
     def set_visible(self, visible):
+        self._visible = visible
+        if self._widget == None:
+            self._queue.append((self.set_visible, (visible,)))
+            return
         for child in self._children:
-            child.set_visible(self)
+            child.set_visible(visible)
+        Child.set_visible(self, visible)
 
 
 
@@ -314,12 +426,28 @@ class Container(Parent):
         self._layout = layout
 
     def draw(self):
+        Parent.draw(self)
         if self._layout <> None:
             self._layout.do_layout(self)
-        Parent.draw(self)
 
-    def set_visible(self, visible):
-        pass
+    def _on_draw(self, source):
+        if (self._parent <> None) and (self._parent._widget <> None):
+            self.draw()
+        else:
+            self._queue.append((self._on_draw, (source,)))
+
+    def _on_size_changed(self, source):
+        if (self._parent <> None) and (self._parent._widget <> None):
+            self.draw()
+        else:
+            self._queue.append((self._on_size_changed, (source,)))
+
+    def _on_position_changed(self, source):
+        if (self._parent <> None) and (self._parent._widget <> None):
+            self.draw()
+        else:
+            self._queue.append((self._on_position_changed, (source,)))
+
 
 
 class Section(Container):
@@ -335,14 +463,6 @@ class Section(Container):
     def get_name(self):
         return self._caption
 
-    def set_visible(self, visible):
-        self._visible = visible
-        if visible:
-            self._widget.show()
-        else:
-            self._widget.hide()
-        self.draw()
-
 
 
 class ScrolledContainer(Container):
@@ -353,13 +473,14 @@ class ScrolledContainer(Container):
 
 class TabContainer(Container):
     def __init__(self):
-        Container.__init__(self)
+        Parent.__init__(self)
+        self._layout = None
         self._set_widget(QtGui.QTabWidget())
         self._items = {}
         self.__selectable = True
 
-    def _set_widget(self, w):
-        Container._set_widget(self, w)
+    #def _set_widget(self, w):
+    #    Container._set_widget(self, w)
 
     def draw(self):
         Child.draw(self)
@@ -372,6 +493,10 @@ class TabContainer(Container):
     def add_child(self, child, position = 0):
         if child not in self._children:
             self._items[child.get_name()] = child
+            if self._widget == None:
+                self._createops.append((self.add_child, (child, position)))
+                return
+            child.set_parent(self)
             self._children.append(child)
             self._widget.addTab(child._widget, child.get_name())
             self.emit('child_added')
@@ -398,8 +523,12 @@ class ButtonTabContainer(Container):
 
     def add_child(self, child, position = 0):
         self._items[child.get_name()] = child
+        if self._widget == None:
+            self._queue.append((self.add_child, (child,)))
+            return
+        self._process_queue()
         b = PushButton(child.get_name())
-        #b.set_visible(True)
+        b.set_visible(True)
         child.button = b
         self.__buttoncontainer.add_child(child.button)
         child.button.connect('clicked', self._on_button_selected)
@@ -414,7 +543,7 @@ class ButtonTabContainer(Container):
             ch.set_visible(False)
             self.remove_child(ch)
         Container.add_child(self, item, BorderLayout.CENTER)
-        #source.set_selected(True)
+        #self.add_child(item, BorderLayout.CENTER)
         item.set_visible(True)
         item.draw()
         self.draw()
@@ -431,6 +560,9 @@ class Control(Child):
 
     def set_active(self, active):
         self._active = active
+        if self._widget == None:
+            self._queue.append((self.set_active, (active,)))
+            return
         self._widget.setEnabled(active)
         self.emit('active_changed')
 
@@ -441,13 +573,21 @@ class Control(Child):
         raise NotImplementedError()
 
     def set_text(self, text):
-        raise NotImplementedError()
+        self._caption = text
+        if self._widget == None:
+            self._queue.append((self.set_text, (text,)))
+            return
+        self._widget.setText(text)
+        self.emit('text_changed')
 
     def get_text(self):
+        if self._widget != None:
+            self._caption = self._widget.text()
         return self._caption
 
     def __repr__(self):
         return str(self.get_text())
+
 
 
 class MenuItem(Control):
@@ -458,14 +598,9 @@ class MenuItem(Control):
 class Label(Control):
     def __init__(self, text):
         Control.__init__(self)
-        self._set_widget(QtGui.QLabel())
         self.set_text(text)
+        self._set_widget(QtGui.QLabel())
         self.set_prefered_size(75, 25)
-
-    def set_text(self, text):
-        self._caption = text
-        self._widget.setText(text)
-        self.emit('text_changed')
 
 
 
@@ -477,11 +612,6 @@ class ToolTip(Control):
 class AbstractButton(Control):
     def __init__(self, text):
         Control.__init__(self)
-
-    def set_text(self, text):
-        self._caption = text
-        self._widget.setText(text)
-        self.emit('text_changed')
 
 
 
@@ -497,9 +627,13 @@ class Button(AbstractButton):
 class AbstractPushButton(AbstractButton):
     def __init__(self, text):
         AbstractButton.__init__(self, text)
+        self._selected = False
 
     def _set_widget(self, w):
         AbstractButton._set_widget(self, w)
+        if self._widget == None:
+            self._queue.append((self._set_widget, (w,)))
+            return
         QtCore.QObject.connect(self._widget, QtCore.SIGNAL('toggled(bool)'), self.__on_selected)
 
     def __on_selected(self, bool):
@@ -508,38 +642,42 @@ class AbstractPushButton(AbstractButton):
 
     def set_selected(self, value):
         self._selected = value
+        if self._widget == None:
+            self._queue.append((self.set_selected, (value,)))
+            return
         self._widget.setChecked(value)
         self.emit('button_selected')
 
     def is_selected(self):
-        self._selected = self._widget.isChecked()
+        if self._widget != None:
+            self._selected = self._widget.isChecked()
         return self._selected
+
 
 
 class PushButton(AbstractPushButton):
     def __init__(self, text):
         AbstractPushButton.__init__(self, text)
         self._set_widget(QtGui.QPushButton())
-        self._widget.setCheckable(True)
-        self._widget.setAutoExclusive(True)
+        self._init()
         self.set_text(text)
         self.set_prefered_size(75, 25)
-        #self.set_selected(False)
 
-    def set_selected(self, value):
-        self._selected = value
-        #self._widget.setDown(value)
-        #self._widget.setFlat(value)
-        self._widget.setChecked(value)
-        self.emit('button_selected')
+    def _init(self):
+        if self._widget == None:
+            self._createops.append((self._init,()))
+            return
+        self._widget.setCheckable(True)
+        self._widget.setAutoExclusive(True)
 
     def is_selected(self):
-        self._selected = self._widget.isDown()
+        if self._widget != None:
+            self._selected = self._widget.isDown()
         return self._selected
 
     def draw(self):
-        #print 'draw '+self.get_text()
         self.emit('draw')
+
 
 
 class CheckButton(AbstractPushButton):
@@ -548,7 +686,6 @@ class CheckButton(AbstractPushButton):
         self._set_widget(QtGui.QCheckBox())
         self.set_text(text)
         self.set_prefered_size(75, 25)
-        #self.set_selected(False)
 
 
 
@@ -556,52 +693,56 @@ class RadioButton(AbstractPushButton):
     def __init__(self, text):
         AbstractPushButton.__init__(self, text)
         self._set_widget(QtGui.QRadioButton())
-        self._widget.setAutoExclusive(True)
+        self._init()
         self.set_text(text)
         self.set_prefered_size(75, 25)
-        #self.set_selected(False)
 
-
+    def _init(self):
+        if self._widget == None:
+            self._createops.append((self._init,()))
+            return
+        self._widget.setAutoExclusive(True)
 
 class TextEdit(Control):
     def __init__(self, text=''):
         Control.__init__(self)
         self._set_widget(QtGui.QLineEdit())
-        try:
-            self.set_text(text)
-        except:
-            pass
+        self.set_text(text)
         self.set_prefered_size(100, 20)
-
-    def set_text(self, text):
-        self._widget.setText(text)
-
-    def get_text(self):
-        return self._widget.text()
 
 
 
 class TextArea(TextEdit):
     def __init__(self, text=''):
-        TextEdit.__init__(self, text)
+        Control.__init__(self)
         self._set_widget(QtGui.QTextEdit())
-        try:
-            self.set_text(text)
-        except:
-            pass
+        self.set_text(text)
         self.set_prefered_size(200, 100)
 
     def set_text(self, text):
+        self._caption = text
+        if self._widget == None:
+            self._queue.append((self.set_text, (text,)))
+            return
         self._widget.setPlainText(text)
+        self.emit('text_changed')
 
     def get_text(self):
-        return self._widget.toPlainText()
+        if self._widget != None:
+            self._caption = self._widget.toPlainText()
+        return self._caption
 
 
 
 class PasswordField(TextEdit):
     def __init__(self, text=''):
         TextEdit.__init__(self, text)
+        self._format()
+
+    def _format(self):
+        if self._widget == None:
+            self._createops.append((self._format, ()))
+            return
         self._widget.setEchoMode(QtGui.QLineEdit.Password)
 
 
@@ -611,7 +752,7 @@ class ComboBox(Control):
 
 
 if __name__=='__main__':
-    app = Application()
+    
     w = Window()
     w.set_size(500, 400)
     w.set_title('HOLA MAMA :D')
@@ -622,7 +763,7 @@ if __name__=='__main__':
     
     def proc2(element):
         print element.get_parent()
-    '''
+    
     ta = TextArea('este es un texto largo')
     ta.connect('text_changed', proc2)
     
@@ -630,11 +771,9 @@ if __name__=='__main__':
     ta.set_position(100, 250)
     w.get_container().add_child(ta, BorderLayout.CENTER)
     print ta.get_text()
-    '''
+    
     def proc(element):
-        #print element
-        #ta.set_active(element.is_selected())
-        pass
+        ta.set_active(element.is_selected())
     
     b = Button('Norte')
     b.set_position(100, 10)
@@ -650,7 +789,7 @@ if __name__=='__main__':
     b.connect('button_selected', proc)
     w.get_container().add_child(b, BorderLayout.RIGHT)
     
-    b = PasswordField('Oeste')
+    b = TextEdit('Oeste')
     b.set_position(100, 150)
     w.get_container().add_child(b, BorderLayout.LEFT)
     '''
@@ -662,9 +801,8 @@ if __name__=='__main__':
     b.set_position(100, 500)
     w.get_container().add_child(b)
     
-    '''
+    
     tc = ButtonTabContainer()
-    #tc = TabContainer()
     tc.set_visible(True)
     tc.set_size(600, 300)
     tc.set_position(100, 450)
@@ -678,7 +816,6 @@ if __name__=='__main__':
     
     b = Button('boton2')
     b.set_position(100, 50)
-    b.connect('clicked', proc)
     s = Section('dos')
     s.set_layout(BorderLayout())
     s.add_child(b, BorderLayout.CENTER)
@@ -691,7 +828,10 @@ if __name__=='__main__':
     s.add_child(b, BorderLayout.CENTER)
     tc.add_child(s)
     
-    w.get_container().add_child(tc, BorderLayout.CENTER)
+    w.get_container().add_child(tc)
+    '''
     
+    
+    app = Application()
     app.set_main_window(w)
     app.run()

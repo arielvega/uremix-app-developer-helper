@@ -45,9 +45,9 @@ elif os.name == 'posix':
     try:
         from uadh.gui.gtk2 import gtk2repository as repository
     except Exception, ex:
-        raise
+        #raise
         try:
-            from uadh.gui.qt4 import qt4repository as repository
+            from uadh.gui.qt4 import qtrepository as repository
         except:
             try:
                 from uadh.gui.wxwidgets import wxwidgetsrepository as repository
